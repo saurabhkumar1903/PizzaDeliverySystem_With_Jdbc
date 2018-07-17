@@ -1,5 +1,5 @@
 package com.pizza;
-
+import java.util.List;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,18 +11,28 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DataAccess {
 	// JDBC driver name and database URL
 	
 	static int oid = 0;
 	// Database credentials
+	ArrayList<String> arrayList=new ArrayList<String>();
+	
+	
+	
 	
 	Connection connection = null;
-	PreparedStatement insertIntoPizza, insertIntoOrder,insertIntoCustomer,cancelOrderStatement,viewCurrentOrderStatement,receiveStatement,viewMenuStatement,showorder,oidToCid,cidToName;
+	PreparedStatement getCurrentOrderStatus,updateOrderStatus,insertIntoPizza, insertIntoOrder,insertIntoCustomer,cancelOrderStatement,viewCurrentOrderStatement,receiveStatement,viewMenuStatement,showorder,oidToCid,cidToName;
 
 	public DataAccess() {
 
+		arrayList.add("Processing");
+		arrayList.add("OrderAccepted");
+		arrayList.add("Cooking");
+		arrayList.add("Out For Delivery");
+		arrayList.add("Order Reached The Customer");
 		try {
 			// STEP 1: Register JDBC driver
 			Class.forName(com.sql.DataBaseConnectivity.JDBC_DRIVER);
@@ -38,11 +48,11 @@ public class DataAccess {
 			e.printStackTrace();
 		}
 	}
-
+	
 	public void closeAllConnection() throws SQLException
 	{
 		
-		connection.close();
+		//connection.close();
 	}
 	public void addPizza() throws IOException, SQLException {
 		insertIntoPizza = connection.prepareStatement(com.sql.SqlStatement.insert_into_pizza);		
@@ -236,6 +246,9 @@ public class DataAccess {
 					insertIntoOrder.setString(4, dtf.format(now));
 					insertIntoOrder.setDouble(5, orderedamount);
 					insertIntoOrder.setString(6, "Order Accepted");
+					
+					
+					
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -245,6 +258,7 @@ public class DataAccess {
 				insertIntoCustomer.setString(3, Email);
 				insertIntoCustomer.executeUpdate();//create customer
 				insertIntoOrder.executeUpdate();//create order
+				new ThreadTest(this,lastid+1,"Processing");
 				return lastid+1;
 			}
 
@@ -265,7 +279,7 @@ public class DataAccess {
 			e.printStackTrace();
 		}
 		System.out.println("your order with Order Id " + Oid + " has been cancelleld");
-		cancelOrderStatement.close();
+		//cancelOrderStatement.close();
 	}
 
 	void ViewOrder(int currentOrderOid) throws SQLException {
@@ -285,7 +299,7 @@ public class DataAccess {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		viewCurrentOrderStatement.close();
+		//viewCurrentOrderStatement.close();
 	}
 
 	void UpdateOrder(int currentOrderOid) {
@@ -298,14 +312,24 @@ public class DataAccess {
 	void ReceiveOrder(int currentOrderOid) throws SQLException {
 		receiveStatement=connection.prepareStatement(com.sql.SqlStatement.receive_Current_order);
 		receiveStatement.setInt(1,currentOrderOid);
-		try {
-			receiveStatement.executeUpdate();
-			System.out.println("Order Id "+currentOrderOid+" Received!");
-			} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		getCurrentOrderStatus=connection.prepareStatement(com.sql.SqlStatement.getCurrentOrderStatus);
+		getCurrentOrderStatus.setInt(1, currentOrderOid);
+		ResultSet rs=getCurrentOrderStatus.executeQuery();
+		rs.next();
+		if(rs.getString("status").equals("Order Reached The Customer"))
+		{
+			try {
+				receiveStatement.executeUpdate();
+				System.out.println("Order Id "+currentOrderOid+" Received!");
+				} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		receiveStatement.close();
+		else
+			System.out.println("Order has still not reached You ! You cannot accept the order yet");
+		
+		//receiveStatement.close();
 	}
 
 	String GetCustomerName(int Oid) throws SQLException {
@@ -416,6 +440,26 @@ public class DataAccess {
 		showorder.close();
 
 		return id;
+		
+	}
+
+	public void updateOrderStatus(int orderId, String status) throws SQLException {
+		updateOrderStatus=connection.prepareStatement(com.sql.SqlStatement.updateOrderStatus);
+		for(int i=0;i<5;i++)
+		{
+			status=arrayList.get(i);
+			updateOrderStatus.setString(1, status);
+			updateOrderStatus.setInt(2, orderId);
+			updateOrderStatus.executeUpdate();
+		try{
+        	int randomNum = ThreadLocalRandom.current().nextInt(5000, 60000 + 1);
+            Thread.sleep(randomNum);
+            //Thread.sleep(200);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+		
 		
 	}
 }

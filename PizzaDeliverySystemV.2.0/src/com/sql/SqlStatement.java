@@ -11,8 +11,8 @@ public class SqlStatement {
 	public static String viewAllOrder="Select * from saurabh.order";
 	public static String oidToCid="Select cid from saurabh.order where oid=?";
 	public static String CidToName="select cname from saurabh.customer where cid=?";
-
-
+	public static String updateOrderStatus="update saurabh.order set status=? where oid=?";
+	public static String getCurrentOrderStatus="select status from saurabh.order where oid=?";
 
 
 
